@@ -6,7 +6,7 @@
   <title>Tradewarz - Game UI</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    * {
+ * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
@@ -102,6 +102,7 @@
     const chartContainer = document.getElementById('chart');
     let chartInstance;
     let updateInterval;
+    let guestId;
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -109,7 +110,7 @@
       responseDiv.textContent = '';
       if (updateInterval) clearInterval(updateInterval);
 
-      try {    
+      try {
         const res = await fetch(`/stock?ticker=${ticker}`);
         const text = await res.text();
         let data;
@@ -121,6 +122,7 @@
         }
 
         const prices = data.prices;
+        guestId = data.guestId;
 
         if (!Array.isArray(prices) || !prices.length || !prices[0].time || typeof prices[0].price !== 'number') {
           responseDiv.textContent = 'Invalid format for chart data.';
@@ -128,21 +130,17 @@
         }
 
         responseDiv.textContent = `Showing chart for ${ticker}`;
-
-        // Initialize Chart
         chartContainer.innerHTML = '<canvas id="stockChart"></canvas>';
         const ctx = document.getElementById('stockChart').getContext('2d');
         const labels = prices.map(item => item.time.slice(11, 16));
         const values = prices.map(item => item.price);
 
-        if (chartInstance) {
-          chartInstance.destroy();
-        }
+        if (chartInstance) chartInstance.destroy();
 
         chartInstance = new Chart(ctx, {
           type: 'line',
           data: {
-            labels: labels,
+            labels,
             datasets: [{
               label: `${ticker} Price (1min)`,
               data: values,
@@ -158,22 +156,16 @@
               legend: { labels: { color: '#00ff88' } }
             },
             scales: {
-              x: {
-                ticks: { color: '#bbb', maxTicksLimit: 12 },
-                grid: { color: '#222' }
-              },
-              y: {
-                ticks: { color: '#bbb' },
-                grid: { color: '#222' }
-              }
+              x: { ticks: { color: '#bbb' }, grid: { color: '#222' } },
+              y: { ticks: { color: '#bbb' }, grid: { color: '#222' } }
             }
           }
         });
 
-        // Start live updates every 5 seconds
         updateInterval = setInterval(async () => {
           try {
-            const res = await fetch(`/stock/next?ticker=${ticker}`);
+            const url = `/stock/next?ticker=${ticker}` + (guestId ? `&guestId=${guestId}` : '');
+            const res = await fetch(url);
             if (res.status === 204) {
               clearInterval(updateInterval);
               responseDiv.textContent = `Live data finished for ${ticker}`;
@@ -183,6 +175,7 @@
             const point = await res.json();
             if (!point || !point.time || typeof point.price !== 'number') return;
 
+            if (!chartInstance) return;
             chartInstance.data.labels.push(point.time.slice(11, 16));
             chartInstance.data.datasets[0].data.push(point.price);
             chartInstance.update();
@@ -192,7 +185,6 @@
             console.error(err);
           }
         }, 5000);
-
       } catch (err) {
         responseDiv.textContent = 'An error occurred. Please try again.';
         console.error(err);
