@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tradewarz - Game UI</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script> -->
   <style>
     * {
       margin: 0;
@@ -102,16 +101,17 @@
     const responseDiv = document.getElementById('response');
     const chartContainer = document.getElementById('chart');
     let chartInstance;
-    // let chart, series; // Lightweight Charts (commented out)
+    let updateInterval;
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const ticker = document.getElementById('ticker').value.toUpperCase();
       responseDiv.textContent = '';
-      try {
+      if (updateInterval) clearInterval(updateInterval);
+
+      try {    
         const res = await fetch(`/stock?ticker=${ticker}`);
         const text = await res.text();
-        console.log('Raw response:', text);
         let data;
         try {
           data = JSON.parse(text);
@@ -119,42 +119,32 @@
           responseDiv.textContent = 'Server returned invalid JSON (likely API rate limit).';
           return;
         }
-        if (res.status !== 200) {
-          if (data && data.error) {
-            if (data.error.includes('rate limit')) {
-              responseDiv.textContent = 'API rate limit reached. Please wait and try again.';
-            } else {
-              responseDiv.textContent = data.error;
-            }
-          } else {
-            responseDiv.textContent = 'Unknown server error.';
-          }
-          return;
-        }
-        if (!Array.isArray(data) || !data.length) {
-          responseDiv.textContent = 'No data available for this ticker or invalid format for chart.';
-          return;
-        }
-        // Validate chart data format
-        if (!data[0].time || typeof data[0].close !== 'number') {
+
+        const prices = data.prices;
+
+        if (!Array.isArray(prices) || !prices.length || !prices[0].time || typeof prices[0].price !== 'number') {
           responseDiv.textContent = 'Invalid format for chart data.';
           return;
         }
+
         responseDiv.textContent = `Showing chart for ${ticker}`;
-        // Clear old chart if exists
+
+        // Initialize Chart
         chartContainer.innerHTML = '<canvas id="stockChart"></canvas>';
         const ctx = document.getElementById('stockChart').getContext('2d');
-        const labels = data.map(item => item.time.slice(11, 16)); // show HH:MM
-        const values = data.map(item => item.close);
+        const labels = prices.map(item => item.time.slice(11, 16));
+        const values = prices.map(item => item.price);
+
         if (chartInstance) {
           chartInstance.destroy();
         }
+
         chartInstance = new Chart(ctx, {
           type: 'line',
           data: {
             labels: labels,
             datasets: [{
-              label: `${ticker} Close Price (1min)`,
+              label: `${ticker} Price (1min)`,
               data: values,
               borderColor: '#00ff88',
               backgroundColor: 'rgba(0,255,136,0.1)',
@@ -179,40 +169,30 @@
             }
           }
         });
-        /*
-        // Lightweight Charts code (commented out)
-        chartContainer.innerHTML = '';
-        chart = LightweightCharts.createChart(chartContainer, {
-          width: chartContainer.clientWidth,
-          height: 400,
-          layout: {
-            background: { color: '#000' },
-            textColor: '#fff',
-          },
-          grid: {
-            vertLines: { color: '#222' },
-            horzLines: { color: '#222' },
-          },
-          priceScale: {
-            borderColor: '#555',
-          },
-          timeScale: {
-            borderColor: '#555',
-          },
-        });
-        series = chart.addLineSeries({ color: '#00ff88' });
-        const chartData = data.map(item => {
-          let t = item.time;
-          if (typeof t === 'string' && !/^[0-9]+$/.test(t)) {
-            t = Math.floor(new Date(t).getTime() / 1000);
+
+        // Start live updates every 5 seconds
+        updateInterval = setInterval(async () => {
+          try {
+            const res = await fetch(`/stock/next?ticker=${ticker}`);
+            if (res.status === 204) {
+              clearInterval(updateInterval);
+              responseDiv.textContent = `Live data finished for ${ticker}`;
+              return;
+            }
+
+            const point = await res.json();
+            if (!point || !point.time || typeof point.price !== 'number') return;
+
+            chartInstance.data.labels.push(point.time.slice(11, 16));
+            chartInstance.data.datasets[0].data.push(point.price);
+            chartInstance.update();
+          } catch (err) {
+            clearInterval(updateInterval);
+            responseDiv.textContent = 'Error fetching next data point.';
+            console.error(err);
           }
-          return {
-            time: t,
-            value: item.close
-          };
-        });
-        series.setData(chartData);
-        */
+        }, 5000);
+
       } catch (err) {
         responseDiv.textContent = 'An error occurred. Please try again.';
         console.error(err);
