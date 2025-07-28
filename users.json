@@ -1,17 +1,46 @@
 [
-  {
-    "username": "Trader123",
-    "rating": 1523,
-    "totalGains": 12400,
-    "avgReturn": 5.4,
-    "winRate": 62,
-    "tradesMade": 250,
-    "bestMatch": "+14.6% vs Trader2",
-    "weeklyReturns": [2.4, 5.1, 3.8, 7.2, 6.5],
-    "matchHistory": [
-      { "date": "2025-07-10", "opponent": "Trader2", "result": "Win", "yourReturn": "+5.2%", "opponentReturn": "-2.1%" },
-      { "date": "2025-07-09", "opponent": "Trader3", "result": "Loss", "yourReturn": "-3.4%", "opponentReturn": "+4.5%" },
-      { "date": "2025-07-08", "opponent": "Trader4", "result": "Win", "yourReturn": "+6.1%", "opponentReturn": "-1.2%" }
-    ]
-  }
+    {
+        "username": "Trader123",
+        "rating": 1523,
+        "totalGains": 12400,
+        "avgReturn": 5.4,
+        "winRate": 62,
+        "tradesMade": 250,
+        "bestMatch": "+14.6% vs Trader2",
+        "weeklyReturns": [
+            2.4,
+            5.1,
+            3.8,
+            7.2,
+            6.5
+        ],
+        "matchHistory": [
+            {
+                "date": "2025-07-10",
+                "opponent": "Trader2",
+                "result": "Win",
+                "yourReturn": "+5.2%",
+                "opponentReturn": "-2.1%"
+            },
+            {
+                "date": "2025-07-09",
+                "opponent": "Trader3",
+                "result": "Loss",
+                "yourReturn": "-3.4%",
+                "opponentReturn": "+4.5%"
+            },
+            {
+                "date": "2025-07-08",
+                "opponent": "Trader4",
+                "result": "Win",
+                "yourReturn": "+6.1%",
+                "opponentReturn": "-1.2%"
+            }
+        ]
+    },
+    {
+        "username": "asdf",
+        "password": "3d9f77e41e3ef57a39d4ffdbb90a568e68a2251e146900491b5228538676c833",
+        "rating": 600
+    }
 ]
